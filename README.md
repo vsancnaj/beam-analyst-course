@@ -1,6 +1,8 @@
-# AI Analyst
+# Beam Analyst (course build)
 
-An AI data analyst that runs inside Claude Code and answers business questions about Beam's data. Beam is a media app where users browse, listen to and read content on free, monthly and annual plans. You ask a question in plain words; the analyst frames it, profiles the data, analyses it with pandas, checks its own work and hands back a written brief.
+This is my build of the course project: an AI analyst scoped to Beam's data, with the Frame, Validate and Deliver skills written and tested on the Beam price-increase question. It is a learning build, not the reusable analyst I plan to make for other datasets.
+
+The analyst is an AI data analyst that runs inside Claude Code and answers business questions about Beam's data. Beam is a media app where users browse, listen to and read content on free, monthly and annual plans. You ask a question in plain words; the analyst frames it, profiles the data, analyses it with pandas, checks its own work and hands back a written brief.
 
 ## How It Works
 
@@ -60,14 +62,14 @@ There is no framework and no Python program controlling the model. The agent is 
 
 ## What you will build
 
-This repo ships the analyst's middle: the Profile and Analyse skills and the helpers behind them. Three skills are still to be written before `/analyst` can run end to end: Frame, Validate and Deliver, each in its own folder under `.claude/skills/`. Until Profile has been run on each table, `knowledge/beam/` holds only the known quirks and the corrections file. A finished version of everything lives in [the reference repo](https://github.com/Future-Proof-DS/ai-analyst), for comparison once the three skills are written.
+The course shipped the Profile and Analyse skills and the helpers. I wrote the Frame, Validate and Deliver skills, each in its own folder under `.claude/skills/`, and tested the whole chain on the question "what did the March 2026 price increase cost in retention?". Table notes for four tables are in `knowledge/beam/`. The course's finished version lives in [the reference repo](https://github.com/Future-Proof-DS/ai-analyst), for comparison.
 
 Before touching any data, the analyst reads `knowledge/beam/`, which holds the known quirks of Beam's tables and any corrections it has been given.
 
 ## Project Structure
 
 ```
-ai-analyst/
+beam-analyst-course/
 ├── data/                 # Beam's exported tables (CSV)
 ├── knowledge/beam/       # Known data quirks and corrections
 ├── helpers/              # Shared Python helpers for analysis scripts
