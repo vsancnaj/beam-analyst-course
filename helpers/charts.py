@@ -45,11 +45,13 @@ def _style(ax, title: str, ylabel: str | None, source: str | None) -> None:
 
 def bar(
     categories, values, title, highlight=None, ylabel=None, source=None,
-    horizontal=False,
+    horizontal=False, value_fmt="{:,.0f}",
 ) -> Figure:
     """Return a bar chart with the `highlight` categories in color and the rest gray.
 
     Use it to compare a value across groups; set horizontal=True for long names.
+    value_fmt formats the number on each bar. The default shows whole numbers;
+    pass "{:.1f}" for rates and percentages, or 12.4 will be shown as 12.
     """
     fig, ax = plt.subplots(figsize=(8, 5))
     focus = _as_list(highlight)
@@ -62,7 +64,7 @@ def bar(
     else:
         bars = ax.bar(labels, values, color=colors)
     # Values sit on the bars, so the reader does not have to read an axis.
-    ax.bar_label(bars, fmt="{:,.0f}", padding=3, color=TEXT)
+    ax.bar_label(bars, fmt=value_fmt, padding=3, color=TEXT)
     _style(ax, title, ylabel, source)
     fig.tight_layout()
     return fig
@@ -87,6 +89,8 @@ def line(
             name, xy=(x[-1], ys[-1]), xytext=(5, 0), textcoords="offset points",
             va="center", color=color, fontweight="bold" if name in focus else None,
         )
+    # Month names side by side overlap on a wide time axis; tilt them so each stays readable.
+    ax.tick_params(axis="x", rotation=45)
     _style(ax, title, ylabel, source)
     fig.tight_layout()
     return fig
