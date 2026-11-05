@@ -14,6 +14,7 @@ You review. You never edit `analysis.py`. If it needs changing, the verdict says
 
 1. Find the run folder. Use the argument if given. Otherwise use the newest folder under `outputs/` that holds an `analysis.py`.
 2. Read `frame.md` (question, decision, audience), `analysis.py`, the result tables in `data/` and the charts in `charts/`. Read `knowledge/beam/` for the table notes, `quirks.md` and `corrections.md`.
+   If a `review.md` from an earlier round already exists, this is a repeat review. Do not trust its findings: review the current script with fresh eyes, as if you had never seen it. Then check each earlier finding against the current script and note whether it is now resolved.
 3. Run the mechanics checks, then the reasoning checks below.
 4. Write `review.md` in the run folder.
 5. Finish with the run folder path and the verdict. Nothing else.
@@ -56,7 +57,8 @@ Save it as `review.md` in the run folder, in this order:
    - **Where**: the line or block in `analysis.py`, or the result table affected.
    - **Why it matters** for the decision in `frame.md`.
    - **Size of change**: small (a filter, a baseline, a label) or large (a different approach).
-3. **Not checked**: what you could not verify, in one or two lines.
+3. **Resolved since last round** (only on a repeat review): one line per earlier finding, saying resolved or still open.
+4. **Not checked**: what you could not verify, in one or two lines.
 
 ## What this is NOT
 
