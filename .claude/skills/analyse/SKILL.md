@@ -61,7 +61,7 @@ Write one script at `outputs/<run>/analysis.py`:
 1. Read `data/*.csv` with pandas.
 2. Use `helpers.checks` for at least the checks the plan needs: `date_boundaries` for partial periods at the edges, `matured_only` for windows that have not closed, `join_fan_out` before trusting any join, `parts_sum_to_total` when segments should add back to a total. Print each check's `summary`.
 3. Save each result table to `outputs/<run>/data/<name>.csv`.
-4. Make charts only through `helpers.charts`: `bar` or `line`, then `save` into `outputs/<run>/charts/<name>.png`. Every title states the takeaway the chart proves, not a label.
+4. Make charts only through `helpers.charts`: `bar` or `line`, then `save` into `outputs/<run>/charts/<name>.png`. Every title states the takeaway the chart proves, not a label. For rates and percentages pass `value_fmt` to `bar` (for example `"{:.1f}%"`), or 12.4 shows as 12.
 5. Print the headline numbers, each with its comparison, and the check summaries. Print aggregates only.
 
 Run it from the repo root with `poetry run python outputs/<run>/analysis.py`. If it fails, fix it and rerun until it runs clean. If a check fails, decide whether it changes the answer and fix the script or report it. If the data cannot answer the question, say so plainly and stop.
