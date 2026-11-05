@@ -86,6 +86,32 @@ ai-analyst/
 
 Session-level data is not included.
 
+## My build notes
+
+My own record of how this version was set up, written as I built and tested the skills. The course text above is unchanged.
+
+### Decisions we made
+
+- **Frame asks, never guesses.** No decision named means it stops and asks. It also asks for what result would change the decision, agreed before any data is looked at, and asks (with options) about any word that has more than one meaning.
+- **Deliver reads `review.md` first.** Fix first means no brief. Think on it means a brief where every review finding goes into Checks, fixed or not.
+- **Validate never edits `analysis.py`.** It reviews; the caller fixes. A repeat review starts fresh and then checks each earlier finding.
+- **Chart helper:** `bar()` takes `value_fmt` so percentages keep decimals, and `line()` tilts month labels. Kept small on purpose.
+- **Run folders are not tracked by git** (`outputs/`), so a run needs no branch; changes to skills, helpers and notes do.
+
+### Open questions (not confirmed, so not in `quirks.md`)
+
+- **What does `canceled` mean in Beam's system?** In the data all past-dated `canceled` ends fall in Aug 2026 and Aug 2026 has no `expired` ends, so the label looks tied to recency rather than behaviour. Not confirmed with anyone who owns the data.
+- **Is the Jul 2026 start spike a quirk?** 491 starts in Jul and 323 in Aug 2026 against about 200 a month. Only a person who knows the reason can confirm it.
+- **Who confirms a quirk?** `profile` asks before writing to `quirks.md`. With no user present it writes its guess in the table note instead, which is the intended safe behaviour.
+- **Is the annual plan a fair control group?** It supports the price as the cause but cannot prove it.
+
+### Lessons from testing
+
+- **"Churn" is a vague word too.** The question never said whether a canceled subscriber counts, and the answer changed the size of the result. Pin down every key word, including the ones that feel obvious.
+- **Describe timing only from a table that shows timing.** A two-bucket total ("0 before, 355 after") led to the wrong claim that canceled ends started after March. Show a change by month before explaining it.
+- **A sensitivity test can be biased.** Counting `expired` only looked like a fair alternative but dropped all of August.
+- **Re-testing finds what the first test missed.** The first chain run exposed a missing field between `frame` and `analyse`; the rerun exposed the churn definition.
+
 ---
 
 *Future Proof Data Science - Teaching data scientists to optimize workflows with AI*

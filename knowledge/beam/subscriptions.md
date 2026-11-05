@@ -38,3 +38,4 @@ Observed for monthly: end dates per month run around 115-145 until March 2026, t
 
 Verdict: Caution. Future end dates sit on canceled rows, which the quirk text does not say; a start spike in Sep 2025 and Sep 2026 is partly explained (Sep 2025 by quirk).
 
+Observed in the price-increase run (not a confirmed quirk): among monthly subscriptions with a past end date, all 355 `canceled` ends fall in Aug 2026 and Aug 2026 has no `expired` ends; every earlier month is `expired` only. The label looks tied to recency, not behaviour. Counting both as churn avoids dropping August; confirm the meaning with the data owner.

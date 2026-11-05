@@ -34,6 +34,7 @@ Never print raw rows into the conversation. Aggregates only.
 - [ ] **Is it the right question?** Does the script answer `frame.md`, and can it inform the decision named there?
 - [ ] **What is outside the frame?** What could also explain the result (seasonality, a different cohort mix, other changes at the same time) and is it handled or at least named?
 - [ ] **Does the "so what" hold up?** Does the conclusion follow from the numbers? Does every number carry a comparison? Are percentage points and relative percent kept apart?
+- [ ] **Timing:** when a split or sensitivity shows a surprise, is it shown by period? A claim about when something happened needs a table by month, not two totals.
 - [ ] **Bias:** could a choice in the script tilt the result? For example a comparison window that is too short, a baseline picked after seeing the result, or a split that puts different kinds of users on each side.
 - [ ] **Method:** does the script follow the method rules in `analyst/SKILL.md`, including the checks in `helpers/checks.py`?
 

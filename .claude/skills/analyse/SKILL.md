@@ -85,6 +85,7 @@ Keep it under twenty lines. No brief here; the Deliver step writes the brief.
 - **Always compare.** A number without its comparison is not a finding. When there is no comparison, say so.
 - **Quirks first.** Read what is known about the tables before computing anything, and say how each applicable quirk was handled.
 - **Closed periods only.** An open month or an unmatured trial is not a result.
+- **Show a change by period before you explain it.** A before and after total cannot tell you when something happened. Print or save it by month, then say when.
 - **Name the unit of change.** Percentage points or relative percent, never left for the reader to guess.
 - **Rerunnable or it did not happen.** Anyone can run the script again and get the same tables, charts and numbers.
 - **Say what you did not check.** A gap you name is safer than one a reader finds later.
