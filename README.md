@@ -15,18 +15,18 @@ My own record of how this version was set up, written as I built and tested the 
 - **Chart helper:** `bar()` takes `value_fmt` so percentages keep decimals, and `line()` tilts month labels. Kept small on purpose.
 - **Run folders are not tracked by git** (`outputs/`), so a run needs no branch; changes to skills, helpers and notes do.
 
-### Open questions (not confirmed, so not in `quirks.md`)
+### Questions I asked, and the answers (2026-11-12)
 
-I am not part of the fictional company, so I cannot confirm what the data means. These need an answer from someone who owns Beam's data before the stakeholder meeting. Until then they stay here and not in `quirks.md`, so a guess never becomes a rule the agent trusts.
+I am not part of the fictional company, so I could not confirm what the data means. I asked the course instructors. Confirmed answers now live in `knowledge/beam/quirks.md`.
 
-> [!IMPORTANT]
-> **What does `canceled` mean to Beam?** In the data, every past-dated `canceled` end falls in Aug 2026, and Aug 2026 has no `expired` ends, so the label looks tied to recency rather than behaviour. The brief counts `canceled` plus `expired` as churn, and on that definition churn rose 3.42 points, above the 3-point roll-back line. Counting `expired` only gives +2.09 points, but that drops all of August and is a biased test, not a fair alternative. If `canceled` means something other than "has left" (for example a scheduled cancellation, or a different recording system from August), the August count could be overstated and the headline could change. **Ask:** what does `canceled` mean, and did the way ends are recorded change in 2026? **If the answer is "they have left":** no bias from this choice, and the brief stands as written.
+> [!NOTE]
+> **What does `canceled` mean to Beam?** In the data, every past-dated `canceled` end falls in Aug 2026, and Aug 2026 has no `expired` ends. The brief counts `canceled` plus `expired` as churn: +3.42 points, above the 3-point roll-back line. **Answer (Adel Hassen):** the label for ended subscriptions changed from `expired` to `canceled` for end dates from August 2026. Both mean the subscriber has left, so the brief stands as written. Added to `quirks.md`.
 
-> [!IMPORTANT]
-> **Is the Jul 2026 start spike a quirk?** 491 monthly starts in Jul and 323 in Aug 2026, against about 200 in a normal month. Young subscribers churn the most, so a spike of new subscribers loads the after period with high-churn people. Holding the tenure mix fixed still gives +3.91 points, so the spike does not explain the rise, but it could change its size. **Ask:** was there a promotion or campaign, and should those cohorts be treated differently? If it is a real, repeating event, it belongs in `quirks.md`, and only after someone confirms it.
+> [!NOTE]
+> **Is the Jul 2026 start spike a quirk?** 491 monthly starts in Jul and 323 in Aug 2026, against about 200 in a normal month. Holding the tenure mix fixed still gives +3.91 points, so the spike does not explain the rise. **Answer (Andres Vourakis):** July is a data quirk, not a promotion, so those cohorts need no special treatment. August is real: it is the free trial launch. Added to `quirks.md`.
 
-- **Who confirms a quirk?** `profile` asks before writing to `quirks.md`. With no user present it writes its guess in the table note instead, which is the intended safe behaviour.
-- **Is the annual plan a fair control group?** It supports the price as the cause but cannot prove it.
+- **Who confirms a quirk?** `profile` asks before writing to `quirks.md`. With no user present it writes its guess in the table note instead. **Answer (Adel Hassen):** that is the right safe default. Quirks often come from outside the data (a policy change, a promo), so a person with business knowledge confirms them. The full loop: the analyst finds a quirk, writes it in the table note, a data scientist and a business expert confirm it, then it goes into `quirks.md`.
+- **Is the annual plan a fair control group?** It supports the price as the cause but cannot prove it. **Answer (Adel Hassen):** an okay comparison, not apples to apples, since annual subscribers are likely more committed. Another monthly group would be a better control, because it shares the same billing schedule and renewal timing.
 
 ### Lessons from testing
 
