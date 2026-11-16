@@ -2,7 +2,7 @@
 name: profile
 description: Profiles one of Beam's tables from the data itself and writes what it learned into the knowledge folder, so the next analysis starts from facts instead of column names. Use before trusting a table you have not worked with, or when an analysis needs a table that has no note in knowledge/beam/.
 user-invocable: true
-allowed-tools: Read Bash Write Edit AskUserQuestion
+allowed-tools: Read Bash Write Edit AskUserQuestion mcp__course-db__list_tables mcp__course-db__execute_sql
 argument-hint: <path to a CSV in data/, or a table name>
 ---
 
@@ -18,10 +18,19 @@ Your job is to describe the table from the data, not from the schema, and to wri
 - Not cleaning. You never modify, filter or rewrite anything in `data/`.
 - Not a schema dump. A list of column names and types is where you start, not what you deliver.
 
+## The database (course-db)
+
+The `course-db` MCP server is Beam's Postgres database. It sits beside the CSVs; it does not replace them.
+
+- **CSV first.** For a table that has a CSV in `data/`, profile the CSV with `helpers/profile.py`, as below.
+- **Database only.** `sessions`, `marts.user_revenue_summary`, `ml.churn_snapshot` and `ml.trial_snapshot` have no CSV. Profile these with `mcp__course-db__list_tables` (schema and column comments) and `mcp__course-db__execute_sql` (one aggregate query for row count, null counts, min and max dates, distinct values). Say in the note that the profile came from the database.
+- **Known differences from the CSVs.** `payments` in the database has 43,151 extra rows dated before 2025-01-01 that the CSV does not. `sessions` has 273 rows dated after 2026-09-24, the end of the data.
+- **Rules.** Read only: SELECT, never INSERT, UPDATE, DELETE or DDL. Aggregates only, never raw rows in the conversation. If a query touches `sessions` (4.3 million rows), aggregate in SQL.
+
 ## Act 1: Resolve the target (the gate)
 
-1. If you were given a path, use it. If you were given a table name, it maps to `data/<name>.csv`.
-2. If the file does not exist, list the files that do exist in `data/`, say which one you could not find, and stop. Do not guess a near match.
+1. If you were given a path, use it. If you were given a table name that has a CSV, it maps to `data/<name>.csv`. If it is one of the database-only tables above, use the database.
+2. If the table is in neither place, list the files in `data/` and the tables from `mcp__course-db__list_tables`, say which one you could not find, and stop. Do not guess a near match.
 
 ## Act 2: Profile from the data
 

@@ -2,7 +2,7 @@
 name: analyse
 description: Answers a framed business question about Beam's data with one pandas script that can be rerun, where every headline number carries its comparison. Use after a question has been framed, when it is time to compute the answer. Reads the frame note in the run folder under outputs/ and writes the script, result tables and charts next to it.
 user-invocable: true
-allowed-tools: Read Bash Write Edit Glob AskUserQuestion
+allowed-tools: Read Bash Write Edit Glob AskUserQuestion mcp__course-db__list_tables mcp__course-db__execute_sql
 argument-hint: "[path to the run folder under outputs/]"
 ---
 
@@ -29,6 +29,16 @@ These hold in every act.
 - **Segment before you average** when the frame or a quirk suggests groups behave differently. An average over groups that move in opposite directions hides both.
 - **Percentage points and relative percent are different numbers.** A rate going from 40% to 44% is up 4 percentage points and up 10% relative. Name which one you mean, every time.
 - **Never trust a period that has not closed.** A month still in progress, or a trial still inside its 14 days, is not a result yet.
+
+## The database (course-db)
+
+The `course-db` MCP server is Beam's Postgres database. It sits beside the CSVs; it does not replace them.
+
+- **CSV first.** If every table the question needs has a CSV in `data/`, use the CSVs in `analysis.py`. That keeps the answer rerunnable.
+- **Use the database when** the question needs a table with no CSV (`sessions`, `marts.user_revenue_summary`, `ml.churn_snapshot`, `ml.trial_snapshot`), or to check a CSV number against the source.
+- **Known differences.** `payments` in the database has 43,151 extra rows dated before 2025-01-01 that the CSV does not, so totals differ unless you filter to 2025-01-01 and later. `sessions` has 273 rows after 2026-09-24; filter to `session_date < '2026-09-25'`.
+- **Rules.** Read only: SELECT, never INSERT, UPDATE, DELETE or DDL. Aggregates only, never raw rows. Aggregate in SQL, because `sessions` has 4.3 million rows.
+- **Rerun caveat.** `analysis.py` cannot call the database tools. For a database number, save the exact SQL to `outputs/<run>/queries.sql` and the aggregate it returned to `outputs/<run>/data/<name>.csv`. Under "What was not checked" in the report, say the number came from the database and needs the SQL rerun.
 
 ## Act 1: Find the question (the gate)
 

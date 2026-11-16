@@ -4,6 +4,7 @@ __pycache__/
 .DS_Store
 .env
 .mcp.json
+.claude/bin/
 .ruff_cache/
 outputs/*
 !outputs/.gitkeep
