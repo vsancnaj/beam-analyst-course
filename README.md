@@ -28,6 +28,33 @@ I am not part of the fictional company, so I could not confirm what the data mea
 - **Who confirms a quirk?** `profile` asks before writing to `quirks.md`. With no user present it writes its guess in the table note instead. **Answer (Adel Hassen):** that is the right safe default. Quirks often come from outside the data (a policy change, a promo), so a person with business knowledge confirms them. The full loop: the analyst finds a quirk, writes it in the table note, a data scientist and a business expert confirm it, then it goes into `quirks.md`.
 - **Is the annual plan a fair control group?** It supports the price as the cause but cannot prove it. **Answer (Adel Hassen):** an okay comparison, not apples to apples, since annual subscribers are likely more committed. Another monthly group would be a better control, because it shares the same billing schedule and renewal timing.
 
+### What changed this week (2026-11-12 to 2026-11-16)
+
+| Change | Why it matters |
+| --- | --- |
+| Instructor answers added to `quirks.md` (July spike, `canceled` label) | Two open questions are closed, so later runs do not re-ask them |
+| Semantic layer: one `.yml` per table in `knowledge/beam/` | What a column means now comes from one place, not from column names or database comments |
+| `course-db` launcher (MCP Toolbox, Postgres) | Lets the analyst reach `sessions` (4.3 million rows, no CSV), which the CSVs do not hold |
+| `profile` and `analyse` skills updated | They check the database instead of guessing, and rerun notes say which numbers came from SQL |
+| New table notes: `trials.md`, `sessions.md` | Both were needed for the next question and had no profile yet |
+
+### Question in progress: binge then quiet trials
+
+Question: do trial users who binge on day one and then go quiet convert worse than steady users? The head of growth decides whether onboarding emails should push users to spread their first week out.
+
+Assumptions chosen before looking at any data (full list in the run's `frame.md`, which is not tracked):
+
+1. Binge: top 20% of trial users by day-1 sessions.
+2. Quiet: no sessions on trial days 2 to 4.
+3. Steady: active on 4 or more of trial days 1 to 7.
+4. Decision rule: push the emails if binge-then-quiet users convert at least 5 percentage points lower than steady users; otherwise leave them.
+5. Mature trials only, so open trials are never counted as failures.
+6. A gap shows association, not that spreading use out would raise conversion.
+
+Result (mature trials only, brief not tracked): binge-then-quiet trials converted at 14.3% (1 of 7) against 68.4% for steady trials (812 of 1,188), a gap of 54.1 percentage points. Only 7 trials fall in that group, so the size is uncertain. Going quiet, not bingeing, is what goes with low conversion: quiet trials without a binge converted at 6.7% (6 of 89). Suggested direction: re-engage people on days 2 to 4 instead of discouraging a day-1 binge, and test it, since quiet may be a result of deciding to leave. Peer review verdict: Think on it (small group, quiet versus binge, chart labels), all three addressed.
+
+What I learned: the first session query took minutes (no index on `sessions.user_id`), so the analyst now aggregates in SQL, saves the query in `queries.sql` and the small result as a CSV, and a check in code confirms the CSV adds back to the trials file.
+
 ### Lessons from testing
 
 - **"Churn" is a vague word too.** The question never said whether a canceled subscriber counts, and the answer changed the size of the result. Pin down every key word, including the ones that feel obvious.
@@ -119,7 +146,7 @@ beam-analyst-course/
 - `trials.csv`: 2,073 rows, one per trial
 - `user_activity_metrics.csv`: 998 daily rows of active user counts (dau, wau, mau)
 
-Session-level data is not included.
+Session-level data is not in the CSVs. `sessions` (about 4.3 million rows) is only in the database, reached through `course-db`.
 
 
 ---
