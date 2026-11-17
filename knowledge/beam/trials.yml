@@ -1,0 +1,106 @@
+table: trials
+description: One row per trial. These are 14-day full-access trials, launched on 2026-08-01, and each user has at most one trial. A trial belongs to one user and auto-converts to a paid plan at ends_at unless the user cancels.
+
+fields:
+  - name: trial_id
+    type: integer
+    description: Unique ID of the trial.
+    role: entity
+
+  - name: user_id
+    type: integer
+    description: User who started the trial. Each user has at most one trial.
+    role: relationship
+    related_table: users
+    related_field: user_id
+
+  - name: started_at
+    type: timestamp
+    description: Date and time the trial started, from 2026-08-01 on.
+    role: dimension
+
+  - name: ends_at
+    type: timestamp
+    description: Date and time the trial ends, always 14 days after started_at. A trial is mature when ends_at is on or before the analysis date of 2026-09-24. Only mature trials have a final outcome.
+    role: dimension
+
+  - name: outcome
+    type: text
+    description: How the trial ended. One of converted or canceled. converted means the user rolled into a paid subscription, canceled means they did not. Empty (NULL) while the trial is still running and undecided, so an empty outcome is an open trial, not a failure. A user can cancel before ends_at, so some trials that have not ended yet already have the outcome canceled. Every mature trial has an outcome.
+    role: dimension
+
+  - name: outcome_at
+    type: timestamp
+    description: Date and time the outcome happened. Empty when there is no outcome. Conversions happen at the end of the trial and cancellations during it, so a trial that is not mature can already show canceled but never converted. Counting those early cancellations without the conversions still to come drags the conversion rate down, which is why conversion rates count mature trials only.
+    role: dimension
+
+# Field-level roles above follow the Beam example file.
+# This relationships block is an extra we added on top. The key name "relationships" is our choice and is not in the Beam example file.
+relationships:
+  - name: trial_to_user
+    to: users
+    join: trials.user_id = users.user_id
+    type: many_to_one
+    description: Each trial belongs to one user. The model allows many trials per user, but today every user has at most one.
+
+measures:
+  - name: total_trials
+    formula: COUNT(trial_id)
+    description: Number of trials.
+
+  - name: mature_trials
+    formula: COUNT(trial_id) FILTER (WHERE ends_at::date <= DATE '2026-09-24')
+    description: Number of mature trials, those whose ends_at is on or before the analysis date.
+
+  - name: converted_mature_trials
+    formula: COUNT(trial_id) FILTER (WHERE ends_at::date <= DATE '2026-09-24' AND outcome = 'converted')
+    description: Number of mature trials with outcome converted.
+
+  - name: trial_conversion_rate_pct
+    formula: ROUND(100.0 * COUNT(trial_id) FILTER (WHERE ends_at::date <= DATE '2026-09-24' AND outcome = 'converted') / NULLIF(COUNT(trial_id) FILTER (WHERE ends_at::date <= DATE '2026-09-24' AND outcome IN ('converted', 'canceled')), 0), 1)
+    description: Percent of mature trials that converted, which is converted divided by converted plus canceled. Trials that are not mature yet are left out. NULLIF returns an empty result instead of a divide by zero error when a filter leaves no mature trials.
+
+golden_queries:
+  - name: trial_conversion_rate
+    description: Number of mature trials, number that converted and the conversion rate
+    sql: |
+      SELECT COUNT(*) AS mature_trials,
+             COUNT(*) FILTER (WHERE outcome = 'converted') AS converted_mature_trials,
+             ROUND(100.0 * COUNT(*) FILTER (WHERE outcome = 'converted')
+                   / NULLIF(COUNT(*) FILTER (WHERE outcome IN ('converted', 'canceled')), 0), 1) AS trial_conversion_rate_pct
+      FROM trials
+      WHERE ends_at::date <= DATE '2026-09-24';
+
+  - name: trials_by_outcome
+    description: Number of trials for each outcome, including trials with no outcome
+    sql: |
+      SELECT outcome, COUNT(*) AS total_trials
+      FROM trials
+      GROUP BY outcome
+      ORDER BY total_trials DESC;
+
+  - name: conversion_rate_by_start_week
+    description: Trial conversion rate over mature trials, by the week the trial started
+    sql: |
+      SELECT DATE_TRUNC('week', started_at)::date AS start_week,
+             COUNT(*) FILTER (WHERE outcome = 'converted') AS converted,
+             COUNT(*) FILTER (WHERE outcome = 'canceled') AS canceled,
+             ROUND(COUNT(*) FILTER (WHERE outcome = 'converted')::numeric
+                   / NULLIF(COUNT(*) FILTER (WHERE outcome IN ('converted', 'canceled')), 0), 4) AS conversion_rate
+      FROM trials
+      WHERE ends_at::date <= DATE '2026-09-24'
+      GROUP BY 1
+      ORDER BY 1;
+
+  - name: conversion_rate_by_device
+    description: Trial conversion rate over mature trials, by the device the user signed up on. Joins trials to users to get device_type.
+    sql: |
+      SELECT u.device_type,
+             COUNT(*) AS mature_trials,
+             ROUND(COUNT(*) FILTER (WHERE t.outcome = 'converted')::numeric
+                   / NULLIF(COUNT(*) FILTER (WHERE t.outcome IN ('converted', 'canceled')), 0), 4) AS conversion_rate
+      FROM trials t
+      JOIN users u ON u.user_id = t.user_id
+      WHERE t.ends_at::date <= DATE '2026-09-24'
+      GROUP BY u.device_type
+      ORDER BY conversion_rate DESC;

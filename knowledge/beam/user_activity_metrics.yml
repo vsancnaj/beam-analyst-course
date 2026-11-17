@@ -1,0 +1,96 @@
+table: marts.user_activity_metrics
+description: One row per calendar date with no gaps, holding the number of daily, weekly and monthly active users on that date. The data runs from 2024-01-01 to 2026-09-24. This is a ready-made summary table with no user level detail. It is platform-wide only, with no user, plan or segment, so it cannot split activity by group. Use sessions for that. It does not join to other tables. Never add up dau, wau or mau across dates, because the same user is counted again on every date.
+
+fields:
+  - name: date
+    type: date
+    description: Calendar date of the row. One row per date. The column name is date, so write it as "date" in SQL.
+    role: entity
+
+  - name: dau
+    type: integer
+    description: Daily active users, the number of distinct users with at least one session on this exact date.
+    role: measure
+
+  - name: wau
+    type: integer
+    description: Weekly active users, the number of distinct users with at least one session in the 7 days ending on this date, including the date.
+    role: measure
+
+  - name: mau
+    type: integer
+    description: Monthly active users, the number of distinct users with at least one session in the 30 days ending on this date, including the date. It jumps in September 2025 with the known signup spike, so a trend across that month reflects the spike and not only engagement.
+    role: measure
+
+measures:
+  - name: avg_dau
+    formula: AVG(dau)
+    description: Average daily active users across the dates in the period. Use this to summarise dau over a period, never SUM.
+
+  - name: avg_wau
+    formula: AVG(wau)
+    description: Average weekly active users across the dates in the period.
+
+  - name: avg_mau
+    formula: AVG(mau)
+    description: Average monthly active users across the dates in the period.
+
+  - name: stickiness
+    formula: dau::numeric / NULLIF(mau, 0)
+    description: Daily active users divided by monthly active users for a single day, how many of the month's users come back on a given day. Also called the DAU to MAU ratio. A higher value means stronger daily habit. It falls from about 0.25 to about 0.21 at the September 2025 signup spike.
+
+  - name: avg_stickiness
+    formula: AVG(dau::numeric / NULLIF(mau, 0))
+    description: Average of the daily stickiness values across the dates in the period. When someone asks for stickiness over a period, use this measure.
+
+  - name: dau_mau_ratio
+    formula: ROUND(AVG(dau)::numeric / NULLIF(AVG(mau), 0), 4)
+    description: Average dau divided by average mau, a ratio of averages. It is close to avg_stickiness but not identical. Use avg_stickiness when the question says stickiness, and this one only when a ratio of period averages is asked for.
+
+golden_queries:
+  - name: active_users_on_analysis_date
+    description: Daily, weekly and monthly active users on the analysis date, 2026-09-24
+    sql: |
+      SELECT "date", dau, wau, mau
+      FROM marts.user_activity_metrics
+      WHERE "date" = DATE '2026-09-24';
+
+  - name: daily_active_users_last_30_days
+    description: Daily active users for each of the 30 days up to and including the analysis date
+    sql: |
+      SELECT "date", dau
+      FROM marts.user_activity_metrics
+      WHERE "date" > DATE '2026-09-24' - 30
+        AND "date" <= DATE '2026-09-24'
+      ORDER BY "date";
+
+  - name: average_dau_by_month
+    description: Average daily active users and average monthly active users for each month. avg_mau is an average of a rolling 30 day metric, so use month_end_mau for a point in time read.
+    sql: |
+      SELECT DATE_TRUNC('month', "date")::date AS month_start,
+             ROUND(AVG(dau), 0) AS avg_dau,
+             ROUND(AVG(mau), 0) AS avg_mau
+      FROM marts.user_activity_metrics
+      GROUP BY 1
+      ORDER BY 1;
+
+  - name: month_end_mau
+    description: Monthly active users on the last day of each month in the data. September 2026 shows its last available day, 2026-09-24, because the month is not complete.
+    sql: |
+      SELECT DISTINCT ON (DATE_TRUNC('month', "date"))
+             DATE_TRUNC('month', "date")::date AS month_start,
+             "date" AS last_day,
+             mau
+      FROM marts.user_activity_metrics
+      ORDER BY DATE_TRUNC('month', "date"), "date" DESC;
+
+  - name: monthly_average_stickiness
+    description: Average daily active users, monthly active users and stickiness for each month. Stickiness drops at the September 2025 signup spike.
+    sql: |
+      SELECT DATE_TRUNC('month', "date")::date AS month_start,
+             ROUND(AVG(dau), 0) AS avg_dau,
+             ROUND(AVG(mau), 0) AS avg_mau,
+             ROUND(AVG(dau::numeric / NULLIF(mau, 0)), 4) AS avg_stickiness
+      FROM marts.user_activity_metrics
+      GROUP BY 1
+      ORDER BY 1;

@@ -1,0 +1,109 @@
+table: payments
+description: One row per billing charge on a paid subscription. Use this table for revenue in US dollars. Free subscriptions have no payments, because free is free forever.
+
+fields:
+  - name: payment_id
+    type: integer
+    description: Unique ID of the payment.
+    role: entity
+
+  - name: subscription_id
+    type: integer
+    description: Subscription the payment was made for. Every payment belongs to a monthly or annual subscription.
+    role: relationship
+    related_table: subscriptions
+    related_field: subscription_id
+
+  - name: payment_date
+    type: timestamp
+    description: Date and time of the payment. No payment falls before its subscription's start or after its end.
+    role: dimension
+
+  - name: amount_usd
+    type: numeric
+    description: Amount of the payment in US dollars. Monthly charges are $10 before 2026-03-01 and $12 from March 2026 on, for every monthly subscriber, including those who joined before the change. Annual charges are $100 throughout. Revenue trends across March 2026 therefore mix a price change with a change in volume. All amounts are above zero, so no refunds are recorded as negative payments.
+    role: measure
+
+  - name: method
+    type: text
+    description: How the user paid. One of card, paypal, apple_pay or google_pay.
+    role: dimension
+
+# Field-level roles above follow the Beam example file.
+# This relationships block is an extra we added on top. The key name "relationships" is our choice and is not in the Beam example file.
+relationships:
+  - name: payment_to_subscription
+    to: subscriptions
+    join: payments.subscription_id = subscriptions.subscription_id
+    type: many_to_one
+    description: Each payment belongs to one subscription. To split revenue by plan, join to subscriptions and read plan there.
+
+measures:
+  - name: total_revenue_usd
+    formula: SUM(amount_usd)
+    description: Sum of all payment amounts in US dollars.
+
+  - name: payment_count
+    formula: COUNT(payment_id)
+    description: Number of charges. This is not the number of paying customers, because monthly subscriptions are billed about every 30 days and some months carry two charges for one subscription. Use paying_subscriptions to count subscriptions.
+
+  - name: paying_subscriptions
+    formula: COUNT(DISTINCT subscription_id)
+    description: Subscriptions charged at least once in the period. Always count with distinct subscription_id, never by counting rows, because of the second monthly charge that some months carry.
+
+  - name: avg_payment_usd
+    formula: AVG(amount_usd)
+    description: Average payment amount in US dollars.
+
+  - name: revenue_per_paying_subscription_usd
+    formula: ROUND(SUM(amount_usd) / NULLIF(COUNT(DISTINCT subscription_id), 0), 2)
+    description: Revenue divided by paying subscriptions in the period. Months with a second monthly charge push this above the plain monthly price.
+
+golden_queries:
+  - name: revenue_by_month
+    description: Total revenue in US dollars for each month. Monthly prices rose from $10 to $12 in March 2026, so read months across that date with care.
+    sql: |
+      SELECT DATE_TRUNC('month', payment_date) AS payment_month, SUM(amount_usd) AS total_revenue_usd
+      FROM payments
+      GROUP BY 1
+      ORDER BY 1;
+
+  - name: revenue_by_payment_method
+    description: Total revenue and number of payments for each payment method
+    sql: |
+      SELECT method, SUM(amount_usd) AS total_revenue_usd, COUNT(*) AS payment_count
+      FROM payments
+      GROUP BY method
+      ORDER BY total_revenue_usd DESC;
+
+  - name: revenue_by_plan
+    description: Total revenue for each paid plan. Free is left out.
+    sql: |
+      SELECT s.plan, SUM(p.amount_usd) AS total_revenue_usd
+      FROM payments p
+      JOIN subscriptions s ON s.subscription_id = p.subscription_id
+      WHERE s.plan IN ('monthly', 'annual')
+      GROUP BY s.plan
+      ORDER BY total_revenue_usd DESC;
+
+  - name: monthly_revenue_by_plan
+    description: Revenue each month, split by plan. Joins payments to subscriptions to read plan.
+    sql: |
+      SELECT DATE_TRUNC('month', p.payment_date)::date AS payment_month,
+             s.plan,
+             SUM(p.amount_usd) AS total_revenue_usd
+      FROM payments p
+      JOIN subscriptions s ON s.subscription_id = p.subscription_id
+      GROUP BY 1, 2
+      ORDER BY 1, 2;
+
+  - name: monthly_paying_subscriptions
+    description: Paying subscriptions, charges and revenue per paying subscription each month. Charges exceed paying subscriptions in months with a second monthly charge.
+    sql: |
+      SELECT DATE_TRUNC('month', payment_date)::date AS payment_month,
+             COUNT(DISTINCT subscription_id) AS paying_subscriptions,
+             COUNT(*) AS charges,
+             ROUND(SUM(amount_usd) / COUNT(DISTINCT subscription_id), 2) AS revenue_per_paying_subscription_usd
+      FROM payments
+      GROUP BY 1
+      ORDER BY 1;

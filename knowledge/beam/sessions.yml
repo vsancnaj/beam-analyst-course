@@ -1,0 +1,91 @@
+table: sessions
+description: One row per user session in the BEAM app, about 4.3 million rows. This is the largest table, so aggregate in SQL and return summaries, never raw rows, and filter by date when you can.
+
+fields:
+  - name: session_id
+    type: integer
+    description: Unique ID of the session.
+    role: entity
+
+  - name: user_id
+    type: integer
+    description: User who had the session.
+    role: relationship
+    related_table: users
+    related_field: user_id
+
+  - name: session_date
+    type: timestamp
+    description: Date the session happened. The time part is always 00:00:00, so treat it as a date. Sessions in the data run from 2022-01-12 to 2026-09-26. The 273 sessions after the analysis date of 2026-09-24 are left out of any question that depends on today.
+    role: dimension
+
+  - name: duration_minutes
+    type: integer
+    description: Length of the session in minutes. Every session lasts at least 1 minute.
+    role: measure
+
+  - name: activity_type
+    type: text
+    description: What the user did in the session. One of browse, listen or read.
+    role: dimension
+
+# Field-level roles above follow the Beam example file.
+# This relationships block is an extra we added on top. The key name "relationships" is our choice and is not in the Beam example file.
+relationships:
+  - name: session_to_user
+    to: users
+    join: sessions.user_id = users.user_id
+    type: many_to_one
+    description: Each session belongs to one user. A user can have many sessions.
+
+measures:
+  - name: total_sessions
+    formula: COUNT(session_id)
+    description: Number of sessions in the period.
+
+  - name: total_minutes
+    formula: SUM(duration_minutes)
+    description: Total minutes spent in sessions in the period.
+
+  - name: avg_session_minutes
+    formula: AVG(duration_minutes)
+    description: Average session length in minutes.
+
+  - name: active_users
+    formula: COUNT(DISTINCT user_id)
+    description: Number of distinct users with at least one session in the period.
+
+golden_queries:
+  - name: sessions_by_activity_type
+    description: Number of sessions and total minutes for each activity type in 2026 up to the analysis date, 2026-09-24. Always filter by date because this table is large, and the filter also leaves out the 273 sessions after the analysis date.
+    sql: |
+      SELECT activity_type, COUNT(*) AS total_sessions, SUM(duration_minutes) AS total_minutes
+      FROM sessions
+      WHERE session_date >= DATE '2026-01-01'
+        AND session_date < DATE '2026-09-25'
+      GROUP BY activity_type
+      ORDER BY total_sessions DESC;
+
+  - name: monthly_active_users
+    description: Number of distinct users with at least one session in each month of 2026 through August. Stops at August because September is not complete on the analysis date, 2026-09-24.
+    sql: |
+      SELECT DATE_TRUNC('month', session_date)::date AS session_month, COUNT(DISTINCT user_id) AS active_users
+      FROM sessions
+      WHERE session_date >= DATE '2026-01-01'
+        AND session_date < DATE '2026-09-01'
+      GROUP BY 1
+      ORDER BY 1;
+
+  - name: minutes_per_active_user_by_device_last_30_days
+    description: Minutes spent per active user by signup device over the 30 days ending on the analysis date, 2026-09-24. Joins sessions to users to get device_type.
+    sql: |
+      SELECT u.device_type,
+             COUNT(DISTINCT s.user_id) AS active_users,
+             SUM(s.duration_minutes) AS total_minutes,
+             ROUND(SUM(s.duration_minutes)::numeric / COUNT(DISTINCT s.user_id), 1) AS minutes_per_active_user
+      FROM sessions s
+      JOIN users u ON u.user_id = s.user_id
+      WHERE s.session_date >= DATE '2026-09-24' - 29
+        AND s.session_date < DATE '2026-09-25'
+      GROUP BY u.device_type
+      ORDER BY minutes_per_active_user DESC;
