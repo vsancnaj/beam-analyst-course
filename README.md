@@ -53,6 +53,8 @@ Assumptions chosen before looking at any data (full list in the run's `frame.md`
 
 Result (mature trials only, brief not tracked): binge-then-quiet trials converted at 14.3% (1 of 7) against 68.4% for steady trials (812 of 1,188), a gap of 54.1 percentage points. Only 7 trials fall in that group, so the size is uncertain. Going quiet, not bingeing, is what goes with low conversion: quiet trials without a binge converted at 6.7% (6 of 89). Suggested direction: re-engage people on days 2 to 4 instead of discouraging a day-1 binge, and test it, since quiet may be a result of deciding to leave. Peer review verdict: Think on it (small group, quiet versus binge, chart labels), all three addressed.
 
+![Trial conversion by group: binge-then-quiet is only 7 trials](docs/charts/binge-then-quiet-conversion.png)
+
 What I learned: the first session query took minutes (no index on `sessions.user_id`), so the analyst now aggregates in SQL, saves the query in `queries.sql` and the small result as a CSV, and a check in code confirms the CSV adds back to the trials file.
 
 ### Lessons from testing
