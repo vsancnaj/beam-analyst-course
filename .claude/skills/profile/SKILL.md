@@ -3,7 +3,7 @@ name: profile
 description: Profiles one of Beam's tables from the data itself and writes what it learned into the knowledge folder, so the next analysis starts from facts instead of column names. Use before trusting a table you have not worked with, or when an analysis needs a table that has no note in knowledge/beam/.
 user-invocable: true
 allowed-tools: Read Bash Write Edit AskUserQuestion mcp__course-db__list_tables mcp__course-db__execute_sql
-argument-hint: <path to a CSV in data/, or a table name>
+argument-hint: <a table name, or a path to a CSV in data/>
 ---
 
 You profile a table before anyone trusts it.
@@ -20,10 +20,11 @@ Your job is to describe the table from the data, not from the schema, and to wri
 
 ## The database (course-db)
 
-The `course-db` MCP server is Beam's Postgres database. It sits beside the CSVs; it does not replace them.
+The `course-db` MCP server is Beam's Postgres database. It is the source of record. The CSVs in `data/` are exports: they can be outdated or hold only a sample.
 
-- **CSV first.** For a table that has a CSV in `data/`, profile the CSV with `helpers/profile.py`, as below.
-- **Database only.** `sessions`, `marts.user_revenue_summary`, `ml.churn_snapshot` and `ml.trial_snapshot` have no CSV. Profile these with `mcp__course-db__list_tables` (schema and column comments) and `mcp__course-db__execute_sql` (one aggregate query for row count, null counts, min and max dates, distinct values). Say in the note that the profile came from the database.
+- **Database first.** Profile every table from the database, even when a CSV exists. Use `mcp__course-db__list_tables` (schema and column comments) and `mcp__course-db__execute_sql` (one aggregate query for row count, null counts, min and max dates, distinct counts, and the values of small value sets). Say in the note that the profile came from the database.
+- **CSV only as a fallback.** Profile a CSV with `helpers/profile.py` only when the database cannot be reached or the user passes a CSV path. Say in the note that it came from the CSV and may be outdated.
+- **Database only.** `sessions`, `marts.user_revenue_summary`, `ml.churn_snapshot` and `ml.trial_snapshot` have no CSV at all.
 - **Known differences from the CSVs.** `payments` in the database has 43,151 extra rows dated before 2025-01-01 that the CSV does not. `sessions` has 273 rows dated after 2026-09-24, the end of the data.
 - **Definitions come from the semantic layer.** What a table, column or value means comes from `knowledge/beam/<table>.yml` (descriptions, field roles, relationships), never from database column comments, table comments or column names. If the `.yml` and the database disagree, the `.yml` wins; report the difference in the verdict.
 - **Never guess, check.** If you are unsure whether a table, column or value exists, or what it holds, find out with `mcp__course-db__list_tables` or one `mcp__course-db__execute_sql` query. The database tells you what is there; the `.yml` tells you what it means. Do not answer from column names or memory.
@@ -31,12 +32,13 @@ The `course-db` MCP server is Beam's Postgres database. It sits beside the CSVs;
 
 ## Act 1: Resolve the target (the gate)
 
-1. If you were given a path, use it. If you were given a table name that has a CSV, it maps to `data/<name>.csv`. If it is one of the database-only tables above, use the database.
-2. If the table is in neither place, list the files in `data/` and the tables from `mcp__course-db__list_tables`, say which one you could not find, and stop. Do not guess a near match.
+1. If you were given a table name, find it with `mcp__course-db__list_tables` and profile it from the database. If you were given a CSV path, use the CSV.
+2. If the database cannot be reached, say so, then fall back to `data/<name>.csv` if it exists.
+3. If the table is in neither place, list the tables from `mcp__course-db__list_tables` and the files in `data/`, say which one you could not find, and stop. Do not guess a near match.
 
 ## Act 2: Profile from the data
 
-1. From the repo root, run `poetry run python helpers/profile.py <path>` and read the JSON it prints.
+1. From the database: run the aggregate queries described under "The database" and read the results. From a CSV (fallback only): from the repo root, run `poetry run python helpers/profile.py <path>` and read the JSON it prints.
 2. Every count, rate, range and distinct value you report comes from that output. Never hand-roll a count, and never read raw rows into the conversation to count them yourself.
 3. Look hardest at four things: the grain guess and the duplicate ids, the null rates, the date ranges, and the small value sets.
 
@@ -48,7 +50,7 @@ The `course-db` MCP server is Beam's Postgres database. It sits beside the CSVs;
 
 ## Act 4: Write the note
 
-1. Build the base of the note from the profile with a two-line script run from the repo root:
+1. From the database, write the base sections yourself from the query results, in the same layout the CSV script produces: a grain line, a columns table (name, type, null rate, distinct), date ranges, and low-cardinality values. From a CSV, build the base with a two-line script run from the repo root:
 
    ```bash
    poetry run python -c "from helpers.profile import profile_csv, profile_to_markdown
@@ -86,7 +88,7 @@ Keep it under fifteen lines. Do not paste the note into the CLI.
 ## Principles
 
 - **Describe from the data.** The schema tells you what a column was meant to hold. The profile tells you what it holds.
-- **Code counts, you read.** Every number comes from `helpers/profile.py`. None comes from prose arithmetic.
+- **Code counts, you read.** Every number comes from a database query or `helpers/profile.py`. None comes from prose arithmetic.
 - **Write it down once.** What you learn goes into the note, so no later analysis pays for it again.
 - **A guess is labelled a guess.** Every meaning you infer says "(inferred)" until a person confirms it.
 - **Keep what people wrote.** Updating a note never deletes a fact someone added by hand.

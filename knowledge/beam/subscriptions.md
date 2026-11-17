@@ -32,10 +32,10 @@ Grain (inferred): one subscription per user; user_id is unique too, so there is 
 - `plan`: free, monthly or annual (inferred). Free rows never end (quirk: Free plans never end).
 - `start_date`: when the plan began (inferred). 2026-10-04 max is after the data end of 2026-09-24: scheduled starts (quirk: Future start dates).
 - `end_date`: when the subscription ended or will end (inferred). Null for all active rows and all free rows. Dates after 2026-09-24 sit on `canceled` rows, i.e. scheduled cancellations, not on `active` rows (see quirks proposal below). Annual null rate 94%, monthly 62%.
-- `status`: active, canceled or expired (inferred). Whether canceled and expired both count as churn is not confirmed.
+- `status`: active, canceled or expired. Not used for churn. Definitions and the churn rule live in `subscriptions.yml`, which wins over this note.
 
 Observed for monthly: end dates per month run around 115-145 until March 2026, then jump to 300-350 from April 2026.
 
 Verdict: Caution. Future end dates sit on canceled rows, which the quirk text does not say; a start spike in Sep 2025 and Sep 2026 is partly explained (Sep 2025 by quirk).
 
-Observed in the price-increase run (not a confirmed quirk): among monthly subscriptions with a past end date, all 355 `canceled` ends fall in Aug 2026 and Aug 2026 has no `expired` ends; every earlier month is `expired` only. The label looks tied to recency, not behaviour. Counting both as churn avoids dropping August; confirm the meaning with the data owner.
+Observed in the price-increase run (not a confirmed quirk): among monthly subscriptions with a past end date, all 355 `canceled` ends fall in Aug 2026 and Aug 2026 has no `expired` ends; every earlier month is `expired` only. The label looks tied to recency, not behaviour. Resolved 2026-11-12: see the "Ended label changed in August 2026" quirk; churn comes from `end_date`.

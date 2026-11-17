@@ -8,3 +8,8 @@ __pycache__/
 .ruff_cache/
 outputs/*
 !outputs/.gitkeep
+# Share each run's brief and charts; keep data extracts and scratch files out
+!outputs/*/
+outputs/*/*
+!outputs/*/brief.md
+!outputs/*/charts/
