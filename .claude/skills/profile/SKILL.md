@@ -25,7 +25,9 @@ The `course-db` MCP server is Beam's Postgres database. It sits beside the CSVs;
 - **CSV first.** For a table that has a CSV in `data/`, profile the CSV with `helpers/profile.py`, as below.
 - **Database only.** `sessions`, `marts.user_revenue_summary`, `ml.churn_snapshot` and `ml.trial_snapshot` have no CSV. Profile these with `mcp__course-db__list_tables` (schema and column comments) and `mcp__course-db__execute_sql` (one aggregate query for row count, null counts, min and max dates, distinct values). Say in the note that the profile came from the database.
 - **Known differences from the CSVs.** `payments` in the database has 43,151 extra rows dated before 2025-01-01 that the CSV does not. `sessions` has 273 rows dated after 2026-09-24, the end of the data.
-- **Rules.** Read only: SELECT, never INSERT, UPDATE, DELETE or DDL. Aggregates only, never raw rows in the conversation. If a query touches `sessions` (4.3 million rows), aggregate in SQL.
+- **Definitions come from the semantic layer.** What a table, column or value means comes from `knowledge/beam/<table>.yml` (descriptions, field roles, relationships), never from database column comments, table comments or column names. If the `.yml` and the database disagree, the `.yml` wins; report the difference in the verdict.
+- **Never guess, check.** If you are unsure whether a table, column or value exists, or what it holds, find out with `mcp__course-db__list_tables` or one `mcp__course-db__execute_sql` query. The database tells you what is there; the `.yml` tells you what it means. Do not answer from column names or memory.
+- **Rules.** Read only: SELECT, never INSERT, UPDATE, DELETE or DDL. Every query must be an aggregate (COUNT, SUM, MIN, MAX, GROUP BY) or end with `LIMIT 20`, so no pile of raw rows lands in the conversation. If a query touches `sessions` (4.3 million rows), aggregate in SQL.
 
 ## Act 1: Resolve the target (the gate)
 
@@ -40,7 +42,7 @@ The `course-db` MCP server is Beam's Postgres database. It sits beside the CSVs;
 
 ## Act 3: Read what is already known
 
-1. Read `knowledge/beam/quirks.md`.
+1. Read `knowledge/beam/<table>.yml` first: it holds the definitions. Then read `knowledge/beam/quirks.md`.
 2. If `knowledge/beam/<table>.md` already exists, read it. Anything a person wrote there is a fact you keep.
 3. Match what the profile shows against the quirks. A null rate or a date range a quirk already explains is expected. One no quirk explains is what the verdict is about.
 

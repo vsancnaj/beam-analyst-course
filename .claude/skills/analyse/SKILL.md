@@ -37,7 +37,9 @@ The `course-db` MCP server is Beam's Postgres database. It sits beside the CSVs;
 - **CSV first.** If every table the question needs has a CSV in `data/`, use the CSVs in `analysis.py`. That keeps the answer rerunnable.
 - **Use the database when** the question needs a table with no CSV (`sessions`, `marts.user_revenue_summary`, `ml.churn_snapshot`, `ml.trial_snapshot`), or to check a CSV number against the source.
 - **Known differences.** `payments` in the database has 43,151 extra rows dated before 2025-01-01 that the CSV does not, so totals differ unless you filter to 2025-01-01 and later. `sessions` has 273 rows after 2026-09-24; filter to `session_date < '2026-09-25'`.
-- **Rules.** Read only: SELECT, never INSERT, UPDATE, DELETE or DDL. Aggregates only, never raw rows. Aggregate in SQL, because `sessions` has 4.3 million rows.
+- **Definitions come from the semantic layer.** What a table, column or metric means (for example, a mature trial) comes from `knowledge/beam/<table>.yml`: descriptions, field roles and relationships. Take join keys from `relationships`. Never take meaning from database column comments, table comments or column names. If the `.yml` and the database disagree, the `.yml` wins; say so in the report.
+- **Never guess, check.** If you are unsure whether a table, column or value exists, or what it holds, find out with `mcp__course-db__list_tables` or one `mcp__course-db__execute_sql` query. The database tells you what is there; the `.yml` tells you what it means. Do not assume from column names or memory.
+- **Rules.** Read only: SELECT, never INSERT, UPDATE, DELETE or DDL. Every query must be an aggregate (COUNT, SUM, MIN, MAX, GROUP BY) or end with `LIMIT 20`, so no raw rows land in the conversation. Aggregate in SQL, because `sessions` has 4.3 million rows.
 - **Rerun caveat.** `analysis.py` cannot call the database tools. For a database number, save the exact SQL to `outputs/<run>/queries.sql` and the aggregate it returned to `outputs/<run>/data/<name>.csv`. Under "What was not checked" in the report, say the number came from the database and needs the SQL rerun.
 
 ## Act 1: Find the question (the gate)
@@ -49,7 +51,7 @@ The `course-db` MCP server is Beam's Postgres database. It sits beside the CSVs;
 
 ## Act 2: Load the context
 
-1. Read `knowledge/beam/quirks.md`, `knowledge/beam/corrections.md`, and `knowledge/beam/<table>.md` for each table involved.
+1. Read `knowledge/beam/<table>.yml` (the definitions) and `knowledge/beam/<table>.md` for each table involved, then `knowledge/beam/quirks.md` and `knowledge/beam/corrections.md`.
 2. If a table involved has no note, run the profile skill on it first: read `.claude/skills/profile/SKILL.md` and follow it, then come back here.
 3. Say in one line which quirks apply to this question, and which corrections, if any.
 
